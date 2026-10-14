@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>bruma de flores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+/* ---------- COLORES Y TIPOGRAFÍAS (cámbialos aquí) ---------- */
+:root{
+  --negro:#020202;
+  --hueso:#ece7df;
+  --rojo:#e0242f;            /* el rojo de la "cabeza lectora" */
+  --serif:"Cormorant Garamond",Georgia,serif;
+  --cond:"Antonio","Arial Narrow",Impact,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--negro);color:var(--hueso);font-family:var(--serif);
+  display:flex;flex-direction:column;overflow:hidden;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--rojo);outline-offset:3px}
+
+/* ---------- ENCABEZADO ---------- */
+header{text-align:center;padding:14px 16px 6px}
+.lugar,.reloj{font-family:var(--cond);font-size:.95rem;letter-spacing:.04em}
+.fila{display:grid;grid-template-columns:48px 1fr 48px;align-items:center;margin:8px 0}
+#mas{font-size:2.6rem;font-weight:400;line-height:1;transition:transform .35s}
+#mas[aria-expanded="true"]{transform:rotate(45deg)}
+.titulo{font-size:clamp(2rem,7vw,3.2rem);font-weight:400;letter-spacing:.01em}
+.titulo sup{font-size:.35em;margin-left:.3em}
+
+/* ---------- ESCENA: la obra se ve borrosa y tu "mirada" la aclara ---------- */
+#escena{
+  position:relative;flex:1;min-height:0;margin:10px 16px;overflow:hidden;
+  touch-action:none;cursor:crosshair;background:#0a0a0a;
+  --x:50%;--y:50%;--r:120px;           /* JS los actualiza */
+}
+.media-nav{position:absolute;top:12px;right:12px;z-index:2;display:flex;align-items:center;gap:8px}
+.media-nav button{width:40px;height:40px;background:#020202b8;font-family:var(--cond);font-size:1.4rem}
+.media-nav span{min-width:3.2rem;text-align:center;font-family:var(--cond);font-size:.9rem}
+.capa{position:absolute;inset:0;background-size:cover;background-position:center;transition:opacity .6s}
+.capa video{width:100%;height:100%;object-fit:contain}
+#borrosa{filter:blur(30px) brightness(.55);transform:scale(1.15)}
+#nitida{
+  background-size:contain;background-repeat:no-repeat;
+  -webkit-mask-image:radial-gradient(circle var(--r) at var(--x) var(--y),#000 35%,transparent 100%);
+          mask-image:radial-gradient(circle var(--r) at var(--x) var(--y),#000 35%,transparent 100%);
+}
+#pista{
+  position:absolute;left:0;right:0;bottom:14px;text-align:center;font-style:italic;
+  font-size:1.05rem;pointer-events:none;transition:opacity 1s;padding:0 20px;
+}
+#pista.fuera{opacity:0}
+
+/* ---------- FICHA DE LA OBRA ---------- */
+#ficha{text-align:center;padding:2px 16px 10px;min-height:3.4rem}
+#ficha h2{font-weight:500;font-size:1.35rem}
+#ficha p{font-style:italic;opacity:.75}
+
+/* ---------- TIRA DE PELÍCULA ---------- */
+#tira{
+  display:flex;align-items:center;gap:10px;margin:0 12px 12px;padding:10px;
+  background:#000000;border-radius:14px;
+}
+#play{width:44px;height:44px;font-size:1.3rem;flex:none}
+#miniaturas{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;flex:1;padding:3px 0}
+#miniaturas::-webkit-scrollbar{display:none}
+.mini{
+  flex:none;width:54px;height:62px;border-radius:6px;background-size:cover;background-position:center;
+  opacity:.55;transition:opacity .3s,width .3s;position:relative;
+}
+.mini.activa{opacity:1;width:92px}
+.mini.activa::before{content:"";position:absolute;left:-3px;top:-3px;bottom:-3px;width:2px;background:var(--rojo)}
+
+/* ---------- MENÚ Y PÁGINAS DE TEXTO (se abren sobre todo) ---------- */
+#menu{
+  position:fixed;inset:0;z-index:5;background:var(--negro);display:none;flex-direction:column;
+  padding-top:env(safe-area-inset-top,0px);overflow-y:auto;
+}
+#menu.abierto{display:flex}
+#menu nav{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(22px,6vh,52px);padding:20px}
+#menu nav button{font-family:var(--cond);font-size:clamp(2rem,8vw,3rem);letter-spacing:.03em;text-transform:uppercase}
+#menu nav button:hover{text-decoration:underline;text-underline-offset:8px}
+.pagina{max-width:34rem;margin:auto;padding:30px 24px 60px;font-size:1.3rem;line-height:1.55}
+.pagina p{margin-bottom:1.2em}
+.pagina h3{font-family:var(--cond);font-weight:400;font-size:1.6rem;letter-spacing:.03em;margin-bottom:.8em}
+.pagina a{color:inherit;text-underline-offset:5px}
+.volver{font-family:var(--cond);font-size:1.1rem;margin-bottom:24px;text-decoration:underline;text-underline-offset:5px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="lugar">METEPEC, MX</div>
+  <div class="fila">
+    <button id="mas" aria-label="Abrir menú" aria-expanded="false">+</button>
+    <h1 class="titulo">bruma de flores<sup>©</sup></h1>
+    <span></span>
+  </div>
+  <div class="reloj" aria-label="Tiempo que llevas mirando">mirando <span id="reloj">00:00:00</span></div>
+</header>
+
+<main id="escena" aria-label="Obra seleccionada">
+  <div class="capa" id="borrosa"></div>
+  <div class="capa" id="nitida"></div>
+  <div class="media-nav" id="media-nav" hidden>
+    <button id="medio-anterior" aria-label="Medio anterior">‹</button>
+    <span id="medio-actual" aria-live="polite"></span>
+    <button id="medio-siguiente" aria-label="Medio siguiente">›</button>
+  </div>
+  <p id="pista">mueve el dedo para mirar. quédate quieto y mira más.</p>
+</main>
+
+<div id="ficha"><h2 id="t-titulo"></h2><p id="t-tecnica"></p></div>
+
+<div id="tira">
+  <button id="play" aria-label="Reproducir">▶</button>
+  <div id="miniaturas" role="list"></div>
+</div>
+
+<!-- MENÚ -->
+<div id="menu" aria-hidden="true">
+  <nav id="nav">
+    <button data-ir="obras">obras</button>
+    <button data-ir="statement">statement</button>
+    <button data-ir="bio">bio</button>
+    <button data-ir="contacto">contacto</button>
+  </nav>
+
+  <section class="pagina" id="p-statement" hidden>
+    <button class="volver" data-ir="menu">volver</button>
+    <h3>statement</h3>
+    <p>Buscando crear experiencias donde el espectador se cuestione su propia mirada a través de la intervención de elementos cotidianos.</p>
+    <p>Su forma de llevar los conceptos de su mente al mundo real, desde lo análogo, en acuarela, acrílico, escritura, stop motion, ilustraciones con colores de madera, y en lo digital se enfoca en la animación 2d, ilustraciones en digital y el video arte.</p>
+    <p>Más que generar alguna respuesta, busca generar una reacción, emoción o crítica al espectador, invitando a generar una reflexión sobre nuestro contexto.</p>
+  </section>
+
+  <section class="pagina" id="p-bio" hidden>
+    <button class="volver" data-ir="menu">volver</button>
+    <h3>Alessandra Gonzáles Flores (bruma de flores)</h3>
+    <p>Aless es una estudiante de 5to semestre de la licenciatura de Arte digital en la universidad IUEM en Metepec, suele explorar la incomodidad, el morbo y la forma de consumo de imágenes en la cultura contemporánea.</p>
+  </section>
+
+  <section class="pagina" id="p-contacto" hidden>
+    <button class="volver" data-ir="menu">volver</button>
+    <h3>contacto</h3>
+    <!-- CAMBIA ESTOS DATOS -->
+    <p><a href="alessglezz765@gmail.com">alessglezz765@gmail.com</a></p>
+    <p><a href="https://www.instagram.com/artesandra_floress">artesandra_floress</a></p>
+  </section>
+</div>
+
+<script>
+/* ---------- 1. TUS OBRAS ----------
+   Para cada obra: pon la ruta de tu imagen en "img" (ej. "img/obra1.jpg").
+   Mientras "img" esté vacío se ve el degradado de "fondo" como ejemplo. */
+const obras = [
+  { titulo:"obra 1", tecnica:"conocimiento, abril 2025",           img:"./assets/a11.jpeg", fondo:"linear-gradient(160deg,#7446a0,#251034 70%)" },
+  { titulo:"obra 2", tecnica:"stop motion, 2026",        video:"./assets/a2.mp4", fondo:"radial-gradient(circle at 30% 30%,#4a8fc7,#071827 70%)" },
+  { titulo:"obra 3", tecnica:"animación 2D, 2026",       img:"", video:"./assets/a3.mp4", fondo:"linear-gradient(200deg,#d9578a,#230b17 75%)" },
+  { titulo:"obra 4", tecnica:"video arte, marzo 2025",         img:"", video:"./assets/a4.mp4", fondo:"linear-gradient(#000,#000)" },
+  { titulo:"obra 5", tecnica:"ilustraciones digitales, 2025-2026", img:"", medios:["./assets/a6.jpeg","./assets/a7.jpeg","./assets/a8.jpeg","./assets/a9.mp4"], fondo:"linear-gradient(120deg,#4a8fc7,#071827 70%)" },
+  { titulo:"obra 6", tecnica:"siento que merzco más, junio2025",         img:"", video:"./assets/A5.mp4", fondo:"radial-gradient(circle at 70% 60%,#b8485f,#14050a 70%)" },
+  { titulo:"obra 7", tecnica:"collage personal 2026", img:"./assets/a10.jpeg", miniFondo:true, fondo:"linear-gradient(160deg,#ef6a9c,#4b1732 70%)" },
+  { titulo:"obra 8", tecnica:"", img:"", fondo:"linear-gradient(160deg,#9a6034,#28150d 70%)" }
+];
+
+/* ---------- 2. ELEMENTOS ---------- */
+const $ = id => document.getElementById(id);
+const escena = $("escena"), borrosa = $("borrosa"), nitida = $("nitida");
+const miniaturas = $("miniaturas"), playBtn = $("play");
+const fondoDe = o => o.img || o.medios?.[0] ? `url("${o.img || o.medios[0]}")` : o.fondo;
+let actual = 0, timer = null, medioActual = 0;
+
+function ponerContenido(capa, o){
+  const fuente = o.medios ? o.medios[medioActual] : o.video || o.img;
+  if (!fuente || !/\.mp4(?:$|[?#])/i.test(fuente)){
+    capa.querySelector("video")?.remove();
+    if (fuente && (o.medios || o.img)){
+      capa.style.backgroundImage = `url("${fuente}"), ${o.fondo}`;
+      capa.style.backgroundSize = "contain, cover";
+      capa.style.backgroundRepeat = "no-repeat, no-repeat";
+    } else {
+      capa.style.backgroundImage = fuente ? `url("${fuente}")` : fondoDe(o);
+      capa.style.backgroundSize = "";
+      capa.style.backgroundRepeat = "";
+    }
+    return;
+  }
+  capa.style.backgroundImage = o.fondo;
+  capa.style.backgroundSize = "cover";
+  let video = capa.querySelector("video");
+  if (!video){
+    video = document.createElement("video");
+    video.src = fuente;
+    video.autoplay = true;
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.setAttribute("aria-hidden", "true");
+    if (capa === nitida){
+      video.addEventListener("timeupdate", () => {
+        const videoBorrosa = borrosa.querySelector("video");
+        if (videoBorrosa && Math.abs(videoBorrosa.currentTime - video.currentTime) > 0.15){
+          videoBorrosa.currentTime = video.currentTime;
+        }
+      });
+    }
+    capa.appendChild(video);
+  } else if (video.getAttribute("src") !== fuente){
+    video.src = fuente;
+    video.load();
+  }
+  video.muted = capa !== nitida;
+  video.play().catch(() => {});
+}
+
+function mostrarMedio(i){
+  const o = obras[actual];
+  if (!o.medios) return;
+  medioActual = (i + o.medios.length) % o.medios.length;
+  ponerContenido(borrosa, o);
+  ponerContenido(nitida, o);
+  $("medio-actual").textContent = `${medioActual + 1} / ${o.medios.length}`;
+}
+
+/* ---------- 3. MOSTRAR UNA OBRA ---------- */
+function mostrar(i){
+  actual = (i + obras.length) % obras.length;
+  const o = obras[actual];
+  medioActual = 0;
+  ponerContenido(borrosa, o);
+  ponerContenido(nitida, o);
+  $("media-nav").hidden = !o.medios || o.medios.length < 2;
+  if (o.medios) $("medio-actual").textContent = `1 / ${o.medios.length}`;
+  $("t-titulo").textContent = o.titulo;
+  $("t-tecnica").textContent = o.tecnica;
+  [...miniaturas.children].forEach((m, n) => {
+    m.classList.toggle("activa", n === actual);
+    if (n === actual) m.scrollIntoView({inline:"center", block:"nearest", behavior:"smooth"});
+  });
+}
+
+$("medio-anterior").onclick = () => mostrarMedio(medioActual - 1);
+$("medio-siguiente").onclick = () => mostrarMedio(medioActual + 1);
+
+/* miniaturas de la tira */
+obras.forEach((o, i) => {
+  const b = document.createElement("button");
+  b.className = "mini"; b.style.backgroundImage = o.medios || o.miniFondo ? o.fondo : fondoDe(o);
+  b.setAttribute("aria-label", o.titulo);
+  b.onclick = () => { parar(); mostrar(i); };
+  miniaturas.appendChild(b);
+});
+
+/* reproducir / pausar (pasa sola cada 5 segundos) */
+function parar(){ clearInterval(timer); timer = null; playBtn.textContent = "▶"; playBtn.setAttribute("aria-label","Reproducir"); }
+function avanzarLineaTiempo(){
+  const o = obras[actual];
+  if (o.medios && medioActual < o.medios.length - 1){
+    mostrarMedio(medioActual + 1);
+    return;
+  }
+  mostrar(actual + 1);
+}
+playBtn.onclick = () => {
+  if (timer) return parar();
+  playBtn.textContent = "❚❚"; playBtn.setAttribute("aria-label","Pausar");
+  timer = setInterval(avanzarLineaTiempo, 5000);
+};
+
+/* ---------- 4. LA MIRADA: sigue tu dedo/mouse y crece si te quedas quieto ---------- */
+const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let tx = 0.5, ty = 0.5, x = 0.5, y = 0.5, ultimoMov = performance.now(), r = 280;
+
+escena.addEventListener("pointermove", e => {
+  const b = escena.getBoundingClientRect();
+  tx = (e.clientX - b.left) / b.width;
+  ty = (e.clientY - b.top) / b.height;
+  ultimoMov = performance.now();
+  $("pista").classList.add("fuera");
+});
+
+function animar(){
+  const parado = (performance.now() - ultimoMov) / 1000;     // segundos sin moverte
+  const meta = quieto ? 330 : 230 + Math.min(parado, 6) * 55; // radio objetivo
+  x += (tx - x) * .15; y += (ty - y) * .15; r += (meta - r) * .05;
+  escena.style.setProperty("--x", (x * 100).toFixed(2) + "%");
+  escena.style.setProperty("--y", (y * 100).toFixed(2) + "%");
+  escena.style.setProperty("--r", r.toFixed(1) + "px");
+  requestAnimationFrame(animar);
+}
+animar();
+
+/* ---------- 5. RELOJ: cuánto tiempo llevas mirando ---------- */
+const inicio = Date.now();
+setInterval(() => {
+  const s = Math.floor((Date.now() - inicio) / 1000);
+  const p = n => String(n).padStart(2, "0");
+  $("reloj").textContent = `${p(Math.floor(s/3600))}:${p(Math.floor(s/60)%60)}:${p(s%60)}`;
+}, 1000);
+
+/* ---------- 6. MENÚ ---------- */
+const menu = $("menu"), mas = $("mas");
+const paginas = [...document.querySelectorAll(".pagina")];
+
+function abrirMenu(abierto){
+  menu.classList.toggle("abierto", abierto);
+  menu.setAttribute("aria-hidden", !abierto);
+  mas.setAttribute("aria-expanded", abierto);
+  mas.setAttribute("aria-label", abierto ? "Cerrar menú" : "Abrir menú");
+  if (abierto) irA("menu");
+}
+function irA(destino){
+  if (destino === "obras") return abrirMenu(false);
+  $("nav").hidden = destino !== "menu";
+  paginas.forEach(p => p.hidden = p.id !== "p-" + destino);
+}
+mas.onclick = () => abrirMenu(!menu.classList.contains("abierto"));
+menu.addEventListener("click", e => { const d = e.target.dataset.ir; if (d) irA(d); });
+
+/* teclado: flechas cambian de obra, Esc cierra */
+addEventListener("keydown", e => {
+  if (e.key === "Escape") abrirMenu(false);
+  if (e.key === "ArrowRight") { parar(); mostrar(actual + 1); }
+  if (e.key === "ArrowLeft")  { parar(); mostrar(actual - 1); }
+});
+
+mostrar(0);
+</script>
+</body>
+</html>
